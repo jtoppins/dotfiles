@@ -1,0 +1,14 @@
+[color]
+	ui = auto
+[user]
+	name = Jonathan Toppins
+	email = jtoppins@users.sourceforge.net
+[push]
+	default = matching
+[commit]
+	template = /home/jtoppins/.gittemplate.txt
+[core]
+	editor = vim
+	excludesfile = /home/jtoppins/.gitignore
+[merge]
+	tool = vimdiff

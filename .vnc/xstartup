@@ -1,0 +1,138 @@
+#!/bin/sh
+#
+# xstartup - used to start a window manager for VNC sessions.
+#
+# Copyright (C) 2012 Jonathan Toppins
+#
+#############
+# :Internal Stuff:
+# Variables:
+#   - WM   ---- must be defined before the call to 'start_wm'
+#   - OS_NAME   ---- must be defined before the call to 'setup_env'
+#############
+
+# Global variable
+WM=''
+OS_NAME=$(/bin/uname -s)
+
+cError() {
+	echo "Error: $@" 1>&2
+}
+
+cWarn() {
+	echo "Warning: $@" 1>&2
+}
+
+cDebug() {
+	echo "DEBUG: $@" 1>&2
+}
+
+print_supported() {
+    echo "
+        Linux
+            * /usr/bin/startxfce4 (recommended)
+            * /usr/bin/startkde
+            * /usr/bin/gnome-session --disable-sound --failsafe --sm-disable
+            * /usr/bin/fvwm2
+            * /usr/X11R6/bin/twm
+            * /usr/X11R6/bin/mwm
+            * /usr/bin/enlightenment"
+}
+
+wm2startup() {
+	# assume Linux if can't determine anything else
+	case "${1}" in
+	Xfce4)
+		echo "/usr/bin/startxfce4"
+		;;
+	Fvwm2)
+		echo "/usr/bin/fvwm2"
+		;;
+	Twm)
+		echo "/usr/X11R6/bin/twm"
+		;;
+	Gnome)
+		echo "/usr/bin/gnome-session --sm-disable"
+		;;
+	KDE)
+		echo "/usr/bin/startkde"
+		;;
+	*)
+		echo "Your WM (${USERRC_WM}) is not supported on a ${OS_NAME} system."
+		print_supported
+		exit 1
+		;;
+	esac
+}
+
+###########
+# Sets up the variables that will later be used to launch the window manager.
+###########
+setup_wm() {
+	case "${USERRC_WM}" in
+	Xfce4|Fvwm2|Twm|Gnome|KDE)
+		# These WMs are supported on both OS'es
+		WM=$(wm2startup ${USERRC_WM})
+		;;
+	*)
+		# Maybe the user is using the actual name of the WM's start
+		# program, hope it is in my path...
+		WM=$(type -p ${USERRC_WM})
+		if test 0 != "$?"; then
+		    # OK I give up I can't find your WM... Bailing out.
+		    cError "I give up... was unable to find your WM" \
+			       "(${USERRC_WM}), try one of the following."
+		    print_supported
+		    exit 1
+		fi
+		;;
+	esac
+
+	if test ! -x "${WM}"; then
+		cError "Your choosen WM (${USERRC_WM}) seems to not exist" \
+		       "on this system or is not marked as executable."
+		print_supported
+		exit 1
+	fi
+}
+
+start_wm()
+{
+    ${WM} &
+
+#    if [ -r $HOME/.Xdefaults ] ; then
+#        xrdb -merge $HOME/.Xdefaults
+#    fi
+
+    # Enable copy&paste to/from your PC's desktop
+    if test -x "/usr/bin/vncconfig"; then
+		/usr/bin/vncconfig -nowin &
+    else
+		cWarn "Unable to enable copy&paste support!!"
+    fi
+
+    # Run the vmware tools if this box is a Virtual Machine (VM)
+    if test -x "/usr/bin/vmware-toolbox"; then
+        cDebug "Running vmware-toolbox"
+        /usr/bin/vmware-toolbox &
+    fi
+
+    # Launch any special programs the user has specified
+    if test "" != "${USERRC_XLAUNCH}" && \
+	test -f "${USERRC_XLAUNCH}" && \
+        test -x "${USERRC_XLAUNCH}"; then
+        cDebug "Launching your additional programs"
+        ${USERRC_XLAUNCH} &
+    fi
+}
+
+main()
+{
+    # Configure any special tweaks for the window manager chosen
+    setup_wm
+
+    # Start the window manager
+    start_wm
+}
+
+main
