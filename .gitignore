@@ -1,11 +1,14 @@
-# OS generated files #
-######################
-.DS_Store?
-.DS_Store
-ehthumbs.db
-Icon?
-Thumbs.db
+*
+.*
 
-# Vim editor temp files #
-#########################
-*.sw[a-z]
+# Files that we don't want to ignore
+!.bashrc
+!.bash_logout
+!.profile
+!.gitconfig
+!.gitexclude
+!.gitignore
+!.gitmodules
+!.gittemplate.txt
+!.vim
+!.vimrc

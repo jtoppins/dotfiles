@@ -9,6 +9,6 @@
 	template = /home/jtoppins/.gittemplate.txt
 [core]
 	editor = vim
-	excludesfile = /home/jtoppins/.gitignore
+	excludesfile = /home/jtoppins/.gitexclude
 [merge]
 	tool = vimdiff

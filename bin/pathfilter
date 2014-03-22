@@ -1,0 +1,35 @@
+#!/bin/sh
+#
+# pathfilter - removes duplicate entries in a path listing
+#
+# Copyright (C) 2012,2014 Jonathan Toppins
+#
+# Unit Tests:
+# > ~/bin/pathfilter "test:b:a:test:path"
+# test:b:a:path
+# > ~/bin/pathfilter "test-b-a-test-path" -
+# test-b-a-path
+# > ~/bin/pathfilter "test-b-a-test.path" .
+# test-b-a-test.path
+# > ~/bin/pathfilter "test.b-a.test.path" .
+# test.b-a.path
+#
+
+shortusage() {
+    echo "Usage: $(basename $0) list [seperator]"
+}
+
+# Validate input parameters
+if test $# -lt 1; then
+	echo "$(basename $0): invalid number of parameters."
+	shortusage
+	exit 2
+fi
+
+sep=${2:-:}
+pathlist=$1
+
+temp="$(printf "%s" "${pathlist}" | /usr/bin/awk -v RS=${sep} -v ORS=${sep} \
+	'!($0 in a) {a[$0]; print}')"
+echo "${temp%${sep}}"
+exit 0

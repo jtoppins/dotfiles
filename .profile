@@ -9,14 +9,18 @@
 umask 022
 
 # if running bash
-if [ -n "$BASH_VERSION" ]; then
+if test -n "${BASH_VERSION}" ; then
     # include .bashrc if it exists
-    if [ -f "$HOME/.bashrc" ]; then
-	. "$HOME/.bashrc"
+    if test -f "${HOME}/.bashrc" ; then
+	. "${HOME}/.bashrc"
     fi
 fi
 
-# set PATH so it includes user's private bin if it exists
-if [ -d "$HOME/bin" ] ; then
-    PATH="$HOME/bin:$PATH"
+# We assume the user's private bin exists because we are using pathfilter
+PATH=$(${HOME}/bin/pathfilter \
+    "${HOME}/bin:${PATH}:/usr/local/sbin:/usr/sbin:/sbin")
+export HOST=$(uname -n)
+
+if test -f "${HOME}/.extra_login" ; then
+    . ${HOME}/.extra_login
 fi
