@@ -1,6 +1,6 @@
 #!/bin/sh
 unset TMPDIR
-cwd=$(pwd)
+cwd="$(pwd)/"
 filename=cscope.files
 
 #find ${cwd} -type f  -name "*.[chxsS]" >-o -name "Makefile" \
