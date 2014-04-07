@@ -6,9 +6,9 @@
 [push]
 	default = matching
 [commit]
-	template = /home/jtoppins/.gittemplate.txt
+	template = ~/.gittemplate.txt
 [core]
 	editor = vim
-	excludesfile = /home/jtoppins/.gitexclude
+	excludesfile = ~/.gitexclude
 [merge]
 	tool = vimdiff
