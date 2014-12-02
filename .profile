@@ -18,7 +18,7 @@ fi
 
 # We assume the user's private bin exists because we are using pathfilter
 PATH=$(${HOME}/bin/pathfilter \
-    "${HOME}/bin:${PATH}:/usr/local/sbin:/usr/sbin:/sbin")
+    "${HOME}/bin:/usr/local/sbin:/usr/local/bin:${PATH}:/usr/sbin:/sbin")
 export HOST=$(uname -n)
 
 if test -f "${HOME}/.extra_login" ; then

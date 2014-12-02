@@ -123,7 +123,8 @@ if ! shopt -oq posix; then
     . /usr/share/bash-completion/bash_completion
   elif test -f /etc/bash_completion ; then
     . /etc/bash_completion
-  elif test -f $(brew --prefix)/etc/bash_completion ; then
+  elif test -x /usr/local/bin/brew && \
+       test -f $(brew --prefix)/etc/bash_completion ; then
     . $(brew --prefix)/etc/bash_completion
   fi
 fi
