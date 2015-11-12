@@ -8,6 +8,14 @@ case $- in
       *) return;;
 esac
 
+# the default umask is set in /etc/profile; for setting the umask
+# for ssh logins, install and configure the libpam-umask package.
+umask 022
+
+# We assume the user's private bin exists because we are using pathfilter
+PATH=$(${HOME}/bin/pathfilter \
+    "${HOME}/bin:/usr/local/sbin:/usr/local/bin:${PATH}:/usr/sbin:/sbin")
+
 # Set line editing mode
 set -o emacs
 

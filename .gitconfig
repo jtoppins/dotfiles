@@ -5,8 +5,6 @@
 	email = jtoppins@users.sourceforge.net
 [push]
 	default = matching
-[commit]
-	template = ~/.gittemplate.txt
 [core]
 	editor = vim
 	excludesfile = ~/.gitexclude
