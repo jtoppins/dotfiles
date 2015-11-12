@@ -10,3 +10,10 @@
 	excludesfile = ~/.gitexclude
 [merge]
 	tool = vimdiff
+[sendemail]
+	identity = work
+	thread = true
+	confirm = always
+	validate = true
+	chainreplyto = false
+	suppresscc = self
