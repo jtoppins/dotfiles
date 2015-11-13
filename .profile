@@ -21,6 +21,20 @@ PATH=$(${HOME}/bin/pathfilter \
     "${HOME}/bin:/usr/local/sbin:/usr/local/bin:${PATH}:/usr/sbin:/sbin")
 export HOST=$(uname -n)
 
+gnupgenvfile="$HOME/.gnupg/${HOST}-gpg-agent.env"
+if test -e "$gnupgenvfile" && \
+   kill -0 $(grep GPG_AGENT_INFO "$gnupgenvfile" | cut -d: -f 2) 2>/dev/null; then
+
+    eval "$(cat "$gnupgenvfile")"
+elif test -n "$(which gpg-agent)"; then
+    eval "$(gpg-agent --daemon --enable-ssh-support --write-env-file "$gnupgenvfile")"
+    chmod 600 "$gnupgenvfile"
+fi
+# the env file does not contain the export statement
+export GPG_AGENT_INFO
+# enable gpg-agent for ssh
+export SSH_AUTH_SOCK
+
 if test -f "${HOME}/.extra_login" ; then
     . ${HOME}/.extra_login
 fi
