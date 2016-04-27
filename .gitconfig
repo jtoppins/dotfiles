@@ -8,6 +8,7 @@
 [core]
 	editor = vim
 	excludesfile = ~/.gitexclude
+	abbrev = 12
 [merge]
 	tool = vimdiff
 [sendemail]
@@ -17,3 +18,5 @@
 	validate = true
 	chainreplyto = false
 	suppresscc = self
+[pretty]
+	fixes = Fixes: %h (\"%s\")
