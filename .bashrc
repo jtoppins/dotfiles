@@ -8,6 +8,9 @@ case $- in
       *) return;;
 esac
 
+# Export GPG_TTY so pinentry works
+export GPG_TTY=$(tty)
+
 # the default umask is set in /etc/profile; for setting the umask
 # for ssh logins, install and configure the libpam-umask package.
 umask 022
