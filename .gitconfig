@@ -12,7 +12,6 @@
 [merge]
 	tool = vimdiff
 [sendemail]
-	identity = work
 	thread = true
 	confirm = always
 	validate = true
@@ -20,3 +19,13 @@
 	suppresscc = self
 [pretty]
 	fixes = Fixes: %h (\"%s\")
+[format]
+	signOff = true
+	coverletter = auto
+	thread = true
+[alias]
+	cp = cherry-pick -x
+
+# Always include this last so it can override items in this file.
+[include]
+	path = ~/.gitconfig-customizations
