@@ -9,6 +9,7 @@
 	editor = vim
 	excludesfile = ~/.gitexclude
 	abbrev = 12
+	commentChar = ";"
 [merge]
 	tool = vimdiff
 [sendemail]
@@ -19,13 +20,35 @@
 	suppresscc = self
 [pretty]
 	fixes = Fixes: %h (\"%s\")
+	pick = pick %h %s
 [format]
 	signOff = true
 	coverletter = auto
 	thread = true
 [alias]
+	amend = commit --amend
+	authors = "!git log --pretty='format:%aN <%aE>' | sort | uniq -c | sort -rn"
 	cp = cherry-pick -x
-
+	ls = ls-files
+	ls-ignored = ls-files --exclude-standard --ignored
+	dc = diff --cached
+	s = status
+	check = diff --check
+	checki = diff --check --index
+	cmp = log --oneline --cherry-pick --right-only
+	cmpr = log --oneline --cherry-pick --right-only --reverse
+[diff]
+	renames = false
+	algorithm = minimal
+	mnemonicprefix = true
+[rerere]
+	enabled = true
+[backport]
+	pretty = redhat
+[notes]
+	rewriteRef = refs/notes/commits
+[am]
+	messageid = true
 # Always include this last so it can override items in this file.
 [include]
 	path = ~/.gitconfig-customizations
