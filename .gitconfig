@@ -37,6 +37,7 @@
 	checki = diff --check --index
 	cmp = log --oneline --cherry-pick --right-only
 	cmpr = log --oneline --cherry-pick --right-only --reverse
+	fp = format-patch --notes
 [diff]
 	renames = false
 	algorithm = minimal
@@ -47,6 +48,9 @@
 	pretty = redhat
 [notes]
 	rewriteRef = refs/notes/commits
+[notes "rewrite"]
+	amend = true
+	rebase = true
 [am]
 	messageid = true
 # Always include this last so it can override items in this file.
