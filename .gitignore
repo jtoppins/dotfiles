@@ -1,14 +1,22 @@
+# NOTE! Please use 'git ls-files -i --exclude-standard'
+# command after changing this file, to see if there are
+# any tracked files which get ignored after the change.
+
 *
 .*
 
 # Files that we don't want to ignore
 !.bashrc
 !.bash_logout
-!.profile
+!.festivalrc
 !.gitconfig
 !.gitexclude
 !.gitignore
 !.gitmodules
 !.gittemplate.txt
+!.profile
 !.vim
 !.vimrc
+!.gnupg/
+!.vnc/
+!bin/

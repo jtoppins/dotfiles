@@ -1,0 +1,69 @@
+#!/bin/sh
+
+PROGNAME=$(basename $0)
+OPTIONS_SPEC="\
+${PROGNAME} [--bugs-only] [--match <PATTERN>] [--format <PATTERN>] \
+         [<since>] [<to>]
+
+--
+  Options
+h,help          this help message
+bugs-only       only print bug lines found
+match=PATTERN   custom regex pattern to find bug lines
+format=PATTERN  custom git log format pattern
+"
+CONFIG_BUGMATCH=$(git config --get changelog.bugheader)
+BUGMATCH="${CONFIG_BUGMATCH:-"clos(e[sd]?|ing)|fix(e[sd]|ing)?|resolv(e[sd]?|ing)|implement(s|ed|ing)?"}"
+CONFIG_FORMAT=$(git config --get changelog.format)
+FMT="${CONFIG_FORMAT:-" * %s"}"
+
+OPT_BUGS="false"
+
+# source the git-sh-setup file
+. $(git --exec-path)/git-sh-setup
+
+while test $# -ne 0; do
+	case "$1" in
+	--bugs-only)
+		shift
+		OPT_BUGS="true"
+		;;
+	--match)
+		shift
+		BUGMATCH="$1"
+		shift
+		;;
+	--format)
+		shift
+		FMT="$1"
+		shift
+		;;
+	--)
+		shift
+		break
+		;;
+	*)
+		usage
+		;;
+	esac
+done
+
+arg1=${1:-$(git describe --abbrev=0)}
+arg2=${2:-"HEAD"}
+
+for c in $(git log --pretty="%H"  ${arg1}..${arg2}); do
+	bugs=$(git log -1 --pretty="%s%n%b" $c | grep -iE -e "^(${BUGMATCH}):")
+	if test "${OPT_BUGS}" == "true"; then
+		test -n "${bugs}" && echo "${bugs}"
+	else
+		line="$(git log -1 --pretty="${FMT}" $c)"
+		if test -n "${bugs}"; then
+			nbugs="$(echo "${bugs}" | sort -u | \
+				sed -r -e "s/^(${BUGMATCH}):(.*)$/\2/" | \
+				awk '{$1=$1};1' | sed -e ':a;N;$!ba;s/\n/,/g')"
+			echo "${line} (${nbugs})"
+		else
+			echo "${line}"
+		fi
+	fi
+done

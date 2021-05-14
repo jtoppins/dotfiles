@@ -1,1 +1,2 @@
 (set! voice_default voice_kal_diphone)
+(Parameter.set 'Audio_command "aplay -Dplug:default -f S16_LE -r 15000 $FILE")

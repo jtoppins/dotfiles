@@ -1,0 +1,34 @@
+#!/bin/sh
+
+PROGNAME=$(basename $0)
+
+OPTIONS_SPEC="\
+${PROGNAME} <tagname> [<since>]
+
+Place an annotated and signed tag at HEAD. Auto generate a tag message
+that lists all the changes since <since>, if <since> not provided
+then the log is generated since the last annotated tag (see:
+git-changelog)
+
+--
+  Options
+h,help    show this help message
+"
+
+. $(git --exec-path)/git-sh-setup
+
+if test "$1" == "--"; then
+  shift
+fi
+
+if test $# -lt 1; then
+  echo "error: tag required"
+  usage
+fi
+
+editfile="$(git rev-parse --git-dir)/TAG_EDITMSG"
+echo "$1" > ${editfile}
+echo "" >> ${editfile}
+echo "Changelog:" >> ${editfile}
+git changelog ${2} >> ${editfile}
+git tag -a -s -F ${editfile} -e $1

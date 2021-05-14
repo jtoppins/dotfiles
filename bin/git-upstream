@@ -1,0 +1,64 @@
+#!/bin/sh
+
+PROGNAME=$(basename $0)
+
+OPTIONS_KEEPDASHDASH="true"
+OPTIONS_SPEC="\
+${PROGNAME} [--remote|--branch] [<ref>]
+
+Print the upstream tracking ref for the <ref> specified. By default the
+full ref is printed, the result can be trimmed to only the remote or
+branch with the associated option.
+
+--
+  Options
+h,help    show this help message
+remote    display only the remote part of the upstream ref
+branch    display only the branch part of the upstream ref
+"
+
+. $(git --exec-path)/git-sh-setup
+
+OPTCNT=0
+OPT_BRANCH="false"
+OPT_REMOTE="false"
+
+while test $# -ne 0; do
+	case "$1" in
+	--remote)
+		shift
+		OPT_REMOTE="true"
+		OPTCNT=$(($OPTCNT + 1))
+		;;
+	--branch)
+		shift
+		OPT_BRANCH="true"
+		OPTCNT=$(($OPTCNT + 1))
+		;;
+	--)
+		shift
+		break
+		;;
+	*)
+		usage
+		;;
+	esac
+done
+
+if test $OPTCNT -gt 1; then
+	die "error: only one of --branch|--remote can be provided"
+fi
+
+ref=${1:-"HEAD"}
+uref="$(git rev-parse --abbrev-ref ${ref}@{upstream})"
+
+# TODO: this actually doesn't work for remotes with slashes in their names
+# need some way to match to the actual git remote list
+if "${OPT_REMOTE}" == "true"; then
+	uref="$(echo "${uref}" | sed -e 's:/.*$::')"
+elif "${OPT_BRANCH}" == "true"; then
+	uref="$(echo "${uref}" | sed -e 's:^[^/]*/::')"
+fi
+
+echo "${uref}"
+exit 0

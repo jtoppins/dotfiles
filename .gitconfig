@@ -2,7 +2,7 @@
 	ui = auto
 [user]
 	name = Jonathan Toppins
-	email = jtoppins@users.sourceforge.net
+	email = jtoppins@users.noreply.github.com
 [push]
 	default = matching
 [core]
@@ -27,23 +27,25 @@
 	thread = true
 [alias]
 	amend = commit --amend
-	authors = "!git log --pretty='format:%aN <%aE>' | sort | uniq -c | sort -rn"
-	cp = cherry-pick -x
+	authors = "!f() { git log --pretty=short $@ | git shortlog -sne; }; f"
+	cp = cherry-pick -x --signoff
+	cs = commit -s
 	ls = ls-files
 	ls-ignored = ls-files --exclude-standard --ignored
 	dc = diff --cached
 	s = status
 	check = diff --check
 	checki = diff --check --index
-	cmp = log --oneline --cherry-pick --right-only
-	cmpr = log --oneline --cherry-pick --right-only --reverse
-	fp = format-patch --notes
+	cmp = log --oneline --cherry-pick --right-only --pretty='%H %s'
+	cmpr = log --oneline --cherry-pick --right-only --reverse --pretty='%H %s'
+	fp = "!git format-patch --notes --subject-prefix \"PATCH $(git upstreamremote)\" -o fp-patches"
+	pruneall = "!for r in $(git remote); do git remote prune $r; done"
 [diff]
-	renames = false
+	renames = true
 	algorithm = minimal
 	mnemonicprefix = true
 [rerere]
-	enabled = true
+	enabled = false
 [backport]
 	pretty = redhat
 [notes]
@@ -54,5 +56,5 @@
 [am]
 	messageid = true
 # Always include this last so it can override items in this file.
-[include]
-	path = ~/.gitconfig-customizations
+#[include]
+#	path = ~/.gitconfig-customizations

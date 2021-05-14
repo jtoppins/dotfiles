@@ -1,0 +1,9 @@
+!build-cscope.sh
+!kill-read-clipboard.sh
+!genpasswd
+!git-changelog
+!git-pushmr
+!git-tagrelease
+!git-upstream
+!pathfilter
+!read-clipboard.sh

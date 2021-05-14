@@ -1,0 +1,91 @@
+#!/bin/sh
+
+set -e
+PROGNAME=$(basename $0)
+OPTIONS_SPEC="\
+${PROGNAME} [--draft]
+
+--
+  Options
+h,help   this help message
+draft    create the merge-request in draft state
+match=PATTERN  match pattern passed to git-changelog
+"
+
+. $(git --exec-path)/git-sh-setup
+
+OPT_DRAFT="$(git config --get --type bool --default false mergerequest.draft)"
+OPT_MATCH=""
+UPSTREAM_REF="$(git upstream)"
+MRFILE="$(git rev-parse --git-dir)/MR_EDITMSG"
+branch="$(git symbolic-ref --short HEAD)"
+titleheader=""
+
+if test -z "${UPSTREAM_REF}"; then
+	die "error: need to set an upstream tracking branch"
+fi
+
+while test $# -ne 0; do
+	case "$1" in
+	--draft)
+		shift
+		OPT_DRAFT="true"
+		;;
+	--match)
+		shift
+		OPT_MATCH="$1"
+		shift
+		;;
+	--)
+		shift
+		break
+		;;
+	*)
+		usage
+		;;
+	esac
+done
+
+if test "${OPT_DRAFT}" == "true"; then
+	titleheader="Draft: "
+fi
+
+touch "${MRFILE}"
+if test $(git log --pretty="%H" ${UPSTREAM_REF}..HEAD | wc -l) -gt 1; then
+	if test -n "${OPT_MATCH}"; then
+		OPT_MATCH="--match ${OPT_MATCH}"
+	fi
+	git changelog --bugs-only ${OPT_MATCH} "${UPSTREAM_REF}" | sort -u | \
+	while read line; do
+		git interpret-trailers --trailer "$line" --trim-empty \
+			--where "end" --if-exists "doNothing" --in-place "${MRFILE}"
+	done
+	echo "\
+Please enter the merge-request message for your series. Lines starting
+with '$(git config --get core.commentChar)' will be ignored, and an empty message aborts the PR" | \
+	git stripspace -c >>${MRFILE}
+	git_editor "${MRFILE}"
+	if test -z "$(head -1 ${MRFILE} | git stripspace -s)"; then
+		rm ${MRFILE}
+		die "error: merge-request message must be provided"
+	fi
+else
+	git log -1 --pretty="%s%n%n%b" >"${MRFILE}"
+fi
+
+author="$(git config --get user.name)"
+email="$(git config --get user.email)"
+git interpret-trailers --trailer "Signed-off-by: ${author} <${email}>" \
+	--trim-empty --where "end" --if-exists "doNothing" \
+	--in-place "${MRFILE}"
+
+mrtitle="$(head -1 ${MRFILE} | git stripspace -s)"
+mrbody="$(tail -n+1 ${MRFILE} | git stripspace -s | \
+	sed -e ':a;N;$!ba;s/\n/\\n/g')"
+
+git push -o merge_request.create \
+	-o merge_request.target="$(git upstream --branch)" \
+	-o merge_request.title="${titleheader}${mrtitle}" \
+	-o merge_request.description="${mrbody}" \
+	"$(git upstream --remote)" "${branch}"
+rm ${MRFILE}
