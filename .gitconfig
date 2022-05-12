@@ -25,6 +25,7 @@
 	signOff = true
 	coverletter = auto
 	thread = true
+	headers = "Content-Type: text/plain"
 [alias]
 	amend = commit --amend
 	authors = "!f() { git log --pretty=short $@ | git shortlog -sne; }; f"
@@ -38,7 +39,7 @@
 	checki = diff --check --index
 	cmp = log --oneline --cherry-pick --right-only --pretty='%H %s'
 	cmpr = log --oneline --cherry-pick --right-only --reverse --pretty='%H %s'
-	fp = "!git format-patch --notes --subject-prefix \"PATCH $(git upstreamremote)\" -o fp-patches"
+	fp = "!git format-patch --notes --subject-prefix \"PATCH $(git upstream --remote)\" -o fp-patches"
 	pruneall = "!for r in $(git remote); do git remote prune $r; done"
 [diff]
 	renames = true
