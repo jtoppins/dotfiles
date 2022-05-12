@@ -1,0 +1,61 @@
+#!/bin/sh
+
+PROGNAME=$(basename $0)
+OPTIONS_SPEC="\
+${PROGNAME} <UPSTREAM_COMMIT> [<remote>]
+
+Find all tags that contain UPSTREAM_COMMIT for the given remote. If
+remote is not provided "origin" is used.
+--
+  Options
+h,help          this help message
+filter=         filter the branches that should be searched
+"
+# source the git-sh-setup file
+. $(git --exec-path)/git-sh-setup
+
+filter=""
+while test $# -ne 0; do
+	case "$1" in
+	--filter)
+		shift
+		filter="${1}"
+		shift
+		;;
+	--)
+		shift
+		break
+		;;
+	*)
+		usage
+		;;
+	esac
+done
+
+upstream_commit=${1}
+remote=${2:-"origin"}
+
+# first test if the upstream commit exists in the main tree of RHEL, this
+# means the commit was included with the base RHEL kernel. Just print
+# out the RHEL release tag.
+branches=$(git branch -r --contains "${upstream_commit}" \
+	--format="%(refname:short)" --list "${remote}/main")
+if test -n "${branches}"; then
+	echo "included in base tree: $(git tag --contains \
+		"${upstream_commit}" "v*" | sort -V | head -n1)"
+	exit 0
+fi
+
+# if the upstream commit is not found we need to check for backports,
+# loop over all branches to find all commits where this was backported
+backport_commits=$(for b in $(git branch -r --format="%(refname:short)" \
+	--list "${remote}/*" | grep "^${remote}/${filter}"); do \
+		git log --pretty=%H --grep "commit ${upstream_commit}" ${b}; \
+done)
+
+backport_commits=$(echo "${backport_commits}" | sort -u)
+
+for c in ${backport_commits}; do
+	release=$(git tag --contains "$c" | sort -V | head -n1)
+	echo "release: ${release}; commit: $c"
+done
