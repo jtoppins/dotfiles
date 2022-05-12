@@ -9,12 +9,14 @@ ${PROGNAME} [--draft]
   Options
 h,help   this help message
 draft    create the merge-request in draft state
+f,force  force push to remote
 match=PATTERN  match pattern passed to git-changelog
 "
 
 . $(git --exec-path)/git-sh-setup
 
 OPT_DRAFT="$(git config --get --type bool --default false mergerequest.draft)"
+OPT_FORCE=""
 OPT_MATCH=""
 UPSTREAM_REF="$(git upstream)"
 MRFILE="$(git rev-parse --git-dir)/MR_EDITMSG"
@@ -35,6 +37,10 @@ while test $# -ne 0; do
 		shift
 		OPT_MATCH="$1"
 		shift
+		;;
+	-f|--force)
+		shift
+		OPT_FORCE="-f"
 		;;
 	--)
 		shift
@@ -80,10 +86,10 @@ git interpret-trailers --trailer "Signed-off-by: ${author} <${email}>" \
 	--in-place "${MRFILE}"
 
 mrtitle="$(head -1 ${MRFILE} | git stripspace -s)"
-mrbody="$(tail -n+1 ${MRFILE} | git stripspace -s | \
+mrbody="$(tail -n+2 ${MRFILE} | git stripspace -s | \
 	sed -e ':a;N;$!ba;s/\n/\\n/g')"
 
-git push -o merge_request.create \
+git push ${OPT_FORCE} -o merge_request.create \
 	-o merge_request.target="$(git upstream --branch)" \
 	-o merge_request.title="${titleheader}${mrtitle}" \
 	-o merge_request.description="${mrbody}" \
