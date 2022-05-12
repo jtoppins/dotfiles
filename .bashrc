@@ -17,7 +17,7 @@ umask 022
 
 # We assume the user's private bin exists because we are using pathfilter
 PATH=$(${HOME}/bin/pathfilter \
-    "${HOME}/bin:/usr/local/sbin:/usr/local/bin:${PATH}:/usr/sbin:/sbin")
+    "${HOME}/bin:${HOME}/gems/bin:/usr/local/sbin:/usr/local/bin:${PATH}:/usr/sbin:/sbin")
 
 # Set line editing mode
 set -o emacs
@@ -41,6 +41,9 @@ export VISUAL=gvim
 export MERGE=vimdiff
 export PAGER=less
 export USERRC_WM=Xfce4
+export CCACHE_DIR=~/.ccache
+export CCACHE_TEMPDIR=~/.ccache
+export GEM_HOME="${HOME}/gems"
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -99,9 +102,6 @@ esac
 if test -x /usr/bin/dircolors ; then
     test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
     alias ls='ls --color=auto'
-    #alias dir='dir --color=auto'
-    #alias vdir='vdir --color=auto'
-
     alias grep='grep --color=auto'
     alias fgrep='fgrep --color=auto'
     alias egrep='egrep --color=auto'
@@ -115,7 +115,7 @@ alias time='/usr/bin/time -p'
 
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
-alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
+alias alert='notify-send --urgency=low -i "$(test $? = 0 && echo terminal || echo error)" "$(history|tail -n1|sed -e "s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//")"'
 
 alias ssh-nolearn='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o IdentitiesOnly=yes'
 alias scp-nolearn='scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o IdentitiesOnly=yes'
@@ -124,8 +124,8 @@ alias scp-nolearn='scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=
 # ~/.bash_aliases, instead of adding them here directly.
 # See /usr/share/doc/bash-doc/examples in the bash-doc package.
 
-if test -f ~/.bash_aliases ; then
-    . ~/.bash_aliases
+if test -f "${HOME}/.bash_aliases" ; then
+    . ${HOME}/.bash_aliases
 fi
 
 # enable programmable completion features (you don't need to enable
