@@ -41,8 +41,7 @@ export VISUAL=gvim
 export MERGE=vimdiff
 export PAGER=less
 export USERRC_WM=Xfce4
-export CCACHE_DIR=~/.ccache
-export CCACHE_TEMPDIR=~/.ccache
+export CCACHE_CONFIGPATH=${HOME}/.ccache.conf
 export GEM_HOME="${HOME}/gems"
 
 # check the window size after each command and, if necessary,
