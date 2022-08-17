@@ -1,0 +1,273 @@
+#!/bin/sh
+
+#DEBUG=1
+PROGNAME=$(basename $0)
+
+OPTIONS_KEEPDASHDASH="true"
+OPTIONS_SPEC="\
+rhelify [<options>] <commitish>
+
+Rewrite commits to conform to the RHEL kernel commit log standard.
+This includes having a Bugzilla id, Brew build id, documentation
+on how you tested the patch and the patch author being marked as
+yourself.
+
+This tool takes the approach that if you don't define an option an
+easily replaceable default will be provided for you. This allows
+for workflows where people like to fix up their patches after
+having done git-format-patch.
+--
+  Options
+h,help           show this help
+
+i,interactive    Set rebase interactive flag and edit each commit msg
+reset            Delete all headers and rewrite with current invocation
+signoff          Apply signoff
+bugid=           Bugzilla id used to mark the commit with
+buildid=         Brew build id to mark the commit with
+tested=          Text describing what testing was done
+testedfile=      Text file containing testing description
+"
+
+OPT_BUGID=""
+OPT_BUILDID=""
+OPT_TESTED=""
+OPT_TESTEDFILE=""
+OPT_RESET=0
+
+error()
+{
+	die "error: " "$@"
+}
+
+debug()
+{
+	if test -n "${DEBUG}"; then
+		echo "debug: $@"
+	fi
+}
+
+is_index_clean()
+{
+	git rev-parse --verify HEAD >/dev/null || return 1
+	git update-index -q --ignore-submodules --refresh >/dev/null
+	git diff-index --cached --quiet --ignore-submodules HEAD -- || return 1
+	return 0
+}
+
+is_worktree_clean()
+{
+	git rev-parse --verify HEAD >/dev/null || return 1
+	git update-index -q --ignore-submodules --refresh >/dev/null
+	git diff-files --quiet --ignore-submodules || return 1
+	return 0
+}
+
+hook_setup()
+{
+	local hookorig=$1
+	local hooktmp=$2
+
+	debug "hook_setup: $@"
+
+	if test -f "${hookorig}"; then
+		debug "${hookorig} exists"
+		hooktmp="$(mktemp ${hooktmp})"
+		cp -a ${hookorig} ${hooktmp} || return 1
+		COMMITMSG_TMP="${hooktmp}"
+		debug "copied orig hook to ${hooktmp}"
+	fi
+	cat > "${hookorig}" <<'zzzEOMzzz'
+#!/bin/sh
+
+set -e
+
+filename="$1"
+
+BUGID=${RHELIFY_BUGID:-%BUGZILLA%}
+BUILDID=${RHELIFY_BUILDID:-}
+TESTED=${RHELIFY_TESTED:-%TESTED%}
+
+BUGHEADER="Bugzilla:"
+BUILDHEADER="Build Info:"
+TESTHEADER="Tested:"
+
+# Remove all RHEL kernel commit headers if requested to do so
+if test "${RHELIFY_RESET}" = "yes"; then
+	sed -i -e "/^${BUGHEADER}.*/d" "${filename}"
+	sed -i -e "/^${BUILDHEADER}.*/d" "${filename}"
+	sed -i -e "/^${TESTHEADER}.*/d" "${filename}"
+	sed -i -e "/^Upstream Status:.*/d" "${filename}"
+fi
+
+if ! grep "cherry picked from commit" "${filename}" 2>&1 >/dev/null; then
+	if ! grep "^Upstream Status:" "${filename}" 2>&1 >/dev/null; then
+		echo "Upstream Status: %UPSTREAM%" >>"${filename}"
+	fi
+fi
+
+if ! grep "^${BUGHEADER}" "${filename}" 2>&1 >/dev/null; then
+	echo "${BUGHEADER} https://bugzilla.redhat.com/show_bug.cgi?id=${BUGID}" >>"${filename}"
+fi
+
+if test -n "${BUILDID}" && ! grep "^${BUILDHEADER}" "${filename}" 2>&1 >/dev/null; then
+	echo "${BUILDHEADER} https://brewweb.engineering.redhat.com/brew/taskinfo?taskID=${BUILDID}" >>"${filename}"
+fi
+
+if ! grep "^${TESTHEADER}" "${filename}" 2>&1 >/dev/null; then
+	echo "${TESTHEADER} ${TESTED}" >>"${filename}"
+fi
+
+exit 0
+zzzEOMzzz
+	test "$?" -ne 0 && return 1
+	debug "copied new hook"
+	chmod +x "${hookorig}" || return 1
+	debug "set new hook to execute"
+	return 0
+}
+
+hook_restore()
+{
+	local hook=$1
+	local hookcopy=$2
+
+	rm -f "${hook}"
+	debug "rm ${hook}"
+	if test -e "${hookcopy}"; then
+		cp -a "${hookcopy}" "${hook}"
+		debug "cp ${hookcopy} ${hook}"
+		rm "${hookcopy}"
+		debug "rm ${hookcopy}"
+	fi
+}
+
+cleanup()
+{
+	debug "cleanup: COMMITMSG_TMP = ${COMMITMSG_TMP}"
+	hook_restore "${HOOK_COMMITMSG}" "${COMMITMSG_TMP}"
+	rm -rf "${LOCKDIR}"
+}
+
+# source the git-sh-setup file
+. $(git --exec-path)/git-sh-setup
+
+debug "orig cmd line: $@"
+
+REPODIR="$(git rev-parse --git-dir)"
+LOCKDIR="${REPODIR}/rhelify"
+PIDFILE="${LOCKDIR}/pid"
+# Support git worktrees and fallback to using --git-dir for older
+# git versions
+HOOKDIR=$(git rev-parse --git-common-dir)
+if test "${HOOKDIR}" == "--git-common-dir"; then
+	HOOKDIR="${REPODIR}"
+fi
+HOOK_COMMITMSG="${HOOKDIR}/hooks/prepare-commit-msg"
+COMMITMSG_TMP=""
+
+#if (is_index_clean && is_worktree_clean); then
+#	error "cannot run while worktree is dirty"
+#fi
+
+if mkdir "${LOCKDIR}" &>/dev/null; then
+	trap cleanup 0
+	echo "$$" > ${PIDFILE}
+	trap 'exit 3' 1 2 3 15
+else
+	otherpid="$(cat "${PIDFILE}")"
+	debug "instance already running; PID: ${otherpid}"
+	if test $? != 0; then
+		echo "lock failed, PID ${otherpid} is active" >&2
+		exit 4
+	fi
+	if ! kill -0 $otherpid &>/dev/null; then
+		debug "killing currently running version"
+		rm -rf "${LOCKDIR}"
+		echo "lock removed - rerun command" >&2
+		exit 4
+	else
+		echo "lock failed, PID ${otherpid} is active" >&2
+		exit 4
+	fi
+fi
+
+REBASE_ARGS=""
+COMMIT_ARGS=""
+
+# parse options
+while test $# -ne 0; do
+	case "$1" in
+	-i|--interactive)
+		shift
+		REBASE_ARGS="${REBASE_ARGS} -i"
+		COMMIT_ARGS="--edit"
+		;;
+	--reset)
+		shift
+		OPT_RESET="yes"
+		;;
+	--signoff)
+		shift
+		COMMIT_ARGS="${COMMIT_ARGS} --signoff"
+		;;
+	--bugid)
+		shift
+		OPT_BUGID="$1"
+		shift
+		;;
+	--buildid)
+		shift
+		OPT_BUILDID="$1"
+		shift
+		;;
+	--tested)
+		shift
+		OPT_TESTED="$1"
+		shift
+		;;
+	--tested)
+		shift
+		OPT_TESTEDFILE="$1"
+		shift
+		;;
+	--)
+		shift
+		break
+		;;
+	*)
+		REBASE_ARGS="${REBASE_ARGS} $1"
+		shift
+		;;
+	esac
+done
+
+if test $# -ne 1; then
+	error "Must provide a single revision"
+fi
+
+debug "reset:   ${OPT_RESET}"
+debug "bugid:   ${OPT_BUGID}"
+debug "buildid: ${OPT_BUILDID}"
+debug "tested:  ${OPT_TESTED}"
+debug "testedf: ${OPT_TESTEDFILE}"
+debug "rebase:  ${REBASE_ARGS}"
+debug "arg1:    $1"
+
+hook_setup "${HOOK_COMMITMSG}" \
+	"${HOOK_COMMITMSG}.XXXXXX"
+if test $? -ne 0; then
+	error "cannot setup commit message hook"
+fi
+
+# export all the needed environment variables so the commit hook works
+export RHELIFY_BUGID="${OPT_BUGID}"
+export RHELIFY_BUILDID="${OPT_BUILDID}"
+export RHELIFY_TESTED="${OPT_TESTED}"
+export RHELIFY_RESET="${OPT_RESET}"
+
+# call git-rebase with correct arguments
+git rebase -q \
+	--exec "git commit -q --amend --no-edit --reset-author ${COMMIT_ARGS}" \
+	${REBASE_ARGS} \
+	$1

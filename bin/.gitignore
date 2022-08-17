@@ -2,7 +2,10 @@
 !kill-read-clipboard.sh
 !genpasswd
 !git-changelog
+!git-filter-commits
+!git-findallreleases
 !git-pushmr
+!git-rhelify
 !git-tagrelease
 !git-upstream
 !pathfilter

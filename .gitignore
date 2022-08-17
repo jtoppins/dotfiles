@@ -8,6 +8,7 @@
 # Files that we don't want to ignore
 !.bashrc
 !.bash_logout
+!.ccache.conf
 !.festivalrc
 !.gitconfig
 !.gitexclude

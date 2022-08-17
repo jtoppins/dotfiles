@@ -1,0 +1,32 @@
+#!/bin/sh
+
+prefix=""
+while read -r line; do
+	uc="$(echo "${line}" | cut -d' ' -f1)"
+	rhelcommits=$(git log --pretty="%H" \
+		--grep "(cherry picked from commit ${uc})$" \
+		--grep "commit ${uc}$" $1..$2)
+	if test -z "${rhelcommits}"; then
+		# automatic take
+		prefix="T"
+	else
+		# it depends, does the diff between the rhel commit and
+		# upstream commit differ?
+		for c in ${rhelcommits}; do
+			git show $uc > tmp.original.commit.patch
+			git show $c > tmp.backported.commit.patch
+			if diff -du --ignore-matching-lines '^[^+-]' \
+				tmp.original.commit.patch \
+				tmp.backported.commit.patch >/dev/null; then
+				prefix="R"
+			else
+				prefix="P"
+				break
+			fi
+		done
+	fi
+
+	echo "${prefix} $line"
+done
+
+rm -f tmp.original.commit.patch tmp.backported.commit.patch
