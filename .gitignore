@@ -6,6 +6,7 @@
 .*
 
 # Files that we don't want to ignore
+!README.md
 !.bashrc
 !.bash_logout
 !.ccache.conf
