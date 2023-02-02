@@ -4,6 +4,7 @@
 !git-changelog
 !git-filter-commits
 !git-findallreleases
+!git-kernel-files
 !git-pushmr
 !git-rhelify
 !git-tagrelease
