@@ -114,9 +114,9 @@ if test -n "${BUILDID}" && ! grep "^${BUILDHEADER}" "${filename}" 2>&1 >/dev/nul
 	echo "${BUILDHEADER} https://brewweb.engineering.redhat.com/brew/taskinfo?taskID=${BUILDID}" >>"${filename}"
 fi
 
-if ! grep "^${TESTHEADER}" "${filename}" 2>&1 >/dev/null; then
-	echo "${TESTHEADER} ${TESTED}" >>"${filename}"
-fi
+#if ! grep "^${TESTHEADER}" "${filename}" 2>&1 >/dev/null; then
+#	echo "${TESTHEADER} ${TESTED}" >>"${filename}"
+#fi
 
 exit 0
 zzzEOMzzz

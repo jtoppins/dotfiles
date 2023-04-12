@@ -31,8 +31,8 @@ shopt -s histappend
 
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
 HISTCONTROL=erasedups
-HISTSIZE=10000
-HISTFILESIZE=100000
+HISTSIZE=100000
+HISTFILESIZE=300000
 HISTFILE=~/.history
 
 # Common variables
